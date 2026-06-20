@@ -1,0 +1,75 @@
+version: "3.9"
+
+# QuantEngine — Production infrastructure
+# Postgres (TimescaleDB) + Redis with hardened config
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: qe-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_DB: quantengine
+      POSTGRES_USER: quantengine
+      POSTGRES_PASSWORD: ${QE_PG_PASSWORD}
+    ports:
+      - "127.0.0.1:5432:5432"  # localhost only in production
+    volumes:
+      - pgdata_prod:/var/lib/postgresql/data
+      - pgwal:/var/lib/postgresql/wal_archive
+    command: >
+      postgres
+      -c wal_level=replica
+      -c archive_mode=on
+      -c archive_command='cp %p /var/lib/postgresql/wal_archive/%f'
+      -c max_wal_senders=3
+      -c max_connections=100
+      -c shared_buffers=256MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=128MB
+      -c checkpoint_completion_target=0.9
+      -c log_min_duration_statement=100
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantengine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  redis:
+    image: redis:7-alpine
+    container_name: qe-redis-prod
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 1gb
+      --maxmemory-policy noeviction
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+      --requirepass ${QE_REDIS_PASSWORD}
+      --bind 127.0.0.1
+      --protected-mode yes
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redisdata_prod:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${QE_REDIS_PASSWORD}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+
+volumes:
+  pgdata_prod:
+  pgwal:
+  redisdata_prod:

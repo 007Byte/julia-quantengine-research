@@ -1,0 +1,40 @@
+[Unit]
+Description=QuantEngine Trading Pipeline
+After=network-online.target postgresql.service redis.service
+Wants=network-online.target
+Requires=postgresql.service redis.service
+
+[Service]
+Type=simple
+User=quantengine
+Group=quantengine
+WorkingDirectory=/opt/quantengine
+ExecStart=/opt/quantengine/.venv/bin/python -m src.pipeline.runner --team crypto --venue binance
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Environment
+EnvironmentFile=/opt/quantengine/.env
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/quantengine
+PrivateTmp=true
+ProtectKernelTunables=true
+
+# Resource limits
+LimitNOFILE=65536
+MemoryMax=4G
+CPUQuota=200%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quantengine
+
+[Install]
+WantedBy=multi-user.target

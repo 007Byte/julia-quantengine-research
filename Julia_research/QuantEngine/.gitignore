@@ -1,0 +1,35 @@
+# ── Secrets & Credentials ──
+.env
+.env.local
+.env.production
+*.key
+*.pem
+*.p12
+secrets/
+secrets.enc
+
+# ── Julia ──
+Manifest.toml
+*.jl.cov
+*.jl.mem
+*.jl.*.cov
+deps/build.log
+
+# ── Output & Reports ──
+output/
+audit/
+*.pdf
+*.png
+*.svg
+
+# ── System ──
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ── IDE ──
+.vscode/
+.idea/
+*.code-workspace

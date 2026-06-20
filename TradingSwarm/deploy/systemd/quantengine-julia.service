@@ -1,0 +1,32 @@
+[Unit]
+Description=QuantEngine Julia ZMQ Bridge
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quantengine
+Group=quantengine
+WorkingDirectory=/opt/quantengine/Julia_research/QuantEngine
+ExecStart=/opt/julia/bin/julia julia_bridge/zmq_server.jl
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=10
+StartLimitIntervalSec=300
+
+EnvironmentFile=/opt/quantengine/.env
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/quantengine
+PrivateTmp=true
+
+LimitNOFILE=65536
+MemoryMax=8G
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quantengine-julia
+
+[Install]
+WantedBy=multi-user.target

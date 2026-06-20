@@ -1,0 +1,45 @@
+version: "3.9"
+
+# QuantEngine Phase 0 — Development infrastructure
+# Postgres + TimescaleDB + Redis
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: qe-postgres
+    environment:
+      POSTGRES_DB: quantengine
+      POSTGRES_USER: quantengine
+      POSTGRES_PASSWORD: ${QE_PG_PASSWORD:-devpassword}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quantengine"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: qe-redis
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 512mb
+      --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+  redisdata:

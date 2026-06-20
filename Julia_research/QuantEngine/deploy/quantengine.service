@@ -1,0 +1,45 @@
+# ── QuantEngine systemd Service ───────────────────────────────
+# Install: sudo cp deploy/quantengine.service /etc/systemd/system/
+# Enable:  sudo systemctl enable quantengine
+# Start:   sudo systemctl start quantengine
+# Logs:    journalctl -u quantengine -f
+
+[Unit]
+Description=QuantEngine 30-Model Quantitative Trading System
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=quantengine
+Group=quantengine
+WorkingDirectory=/opt/quantengine
+ExecStart=/usr/local/bin/julia --project=/opt/quantengine -t auto bin/run_pipeline.jl BTC-USD,ETH-USD,AAPL
+
+# Environment
+EnvironmentFile=-/opt/quantengine/.env
+
+# Restart policy
+Restart=on-failure
+RestartSec=30
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/quantengine/data /opt/quantengine/audit
+PrivateTmp=true
+
+# Resource limits
+MemoryMax=4G
+CPUQuota=200%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quantengine
+
+[Install]
+WantedBy=multi-user.target

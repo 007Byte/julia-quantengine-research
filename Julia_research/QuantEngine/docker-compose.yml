@@ -1,0 +1,47 @@
+# ── QuantEngine Docker Compose ────────────────────────────────
+version: "3.8"
+
+services:
+  quantengine:
+    build: .
+    container_name: quantengine
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - qe-data:/data
+    environment:
+      - QE_EXECUTION_MODE=PAPER
+      - QE_INITIAL_BANKROLL=${QE_INITIAL_BANKROLL:-2000}
+      - QE_POLL_INTERVAL_MS=${QE_POLL_INTERVAL_MS:-5000}
+      - QE_MAX_POSITION_PCT=${QE_MAX_POSITION_PCT:-0.10}
+      - QE_MAX_DAILY_LOSS_PCT=${QE_MAX_DAILY_LOSS_PCT:-0.05}
+      - QE_MAX_DRAWDOWN_PCT=${QE_MAX_DRAWDOWN_PCT:-0.15}
+      - POLYMARKET_API_KEY=${POLYMARKET_API_KEY:-}
+      - QE_ALPACA_API_KEY=${QE_ALPACA_API_KEY:-}
+      - QE_ALPACA_SECRET_KEY=${QE_ALPACA_SECRET_KEY:-}
+      - QE_X_BEARER_TOKEN=${QE_X_BEARER_TOKEN:-}
+    command: ["bin/run_pipeline.jl", "${QE_ASSETS:-BTC-USD,ETH-USD}"]
+
+  # Periodic SQLite backup
+  db-backup:
+    image: alpine:3.19
+    container_name: qe-backup
+    restart: unless-stopped
+    volumes:
+      - qe-data:/data:ro
+      - qe-backups:/backups
+    entrypoint: /bin/sh
+    command: >
+      -c 'while true; do
+        if [ -f /data/db/quantengine.db ]; then
+          cp /data/db/quantengine.db /backups/quantengine_$(date +%Y%m%d_%H%M%S).db;
+          find /backups -name "*.db" -mtime +7 -delete;
+          echo "Backup completed: $(date)";
+        fi;
+        sleep 3600;
+      done'
+
+volumes:
+  qe-data:
+  qe-backups:
